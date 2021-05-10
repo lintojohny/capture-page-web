@@ -6,14 +6,15 @@ import TextField from "material-ui/TextField";
 import DropDownMenu from "material-ui/DropDownMenu";
 import MenuItem from "material-ui/MenuItem";
 import axios from "axios";
-var apiBaseUrl = "http://localhost:3001/capture";
+var apiBaseUrl = "http://100.26.247.22:3001/capture";
+
 class Webshots extends Component {
   constructor(props) {
     super(props);
     var webshotsComponent = [];
     webshotsComponent.push(
       <MuiThemeProvider key={"theme"}>
-        <div>
+        <div class="ws-padding">
           <TextField
             hintText="Enter the remote url"
             floatingLabelText="Enter remote url"
@@ -100,6 +101,7 @@ class Webshots extends Component {
       remoteUrl: this.state.remoteUrl,
       imageName: this.getName(this.state.remoteUrl, this.state.format),
       shotSize: { width: this.state.shotWidth, height: this.state.shotHeight },
+      format: this.state.format,
       screenSize: {
         width: this.state.screenWidth,
         height: this.state.screenWidth,
@@ -107,18 +109,26 @@ class Webshots extends Component {
     };
     console.log("payload", payload);
     axios
-      .post(apiBaseUrl, payload)
+      .post(apiBaseUrl, payload, {
+        responseType: "blob",
+      })
       .then((response) => {
         console.log("HEre");
-        const link = document.createElement("a");
-        link.href = window.URL.createObjectURL(
-          new Blob([response.data], { type: "image/jpg" })
+        let fileName = response.headers["content-type"].split("fileName=")[1];
+        let contentType = response.headers["content-type"]
+          .split("type=")[1]
+          .split(",")[0];
+
+        const url = window.URL.createObjectURL(
+          new Blob([response.data], {
+            type: contentType,
+          })
         );
-        link.setAttribute("download", "filename.png");
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
         link.click();
-      })
-      .catch(function (error) {
-        console.log(error);
       });
   }
 
@@ -131,7 +141,7 @@ class Webshots extends Component {
         {this.state.webshotsComponent}
 
         <MuiThemeProvider>
-          <div>
+          <div class="ws-padding">
             <p>Format:</p>
             <DropDownMenu
               value={this.state.format}
